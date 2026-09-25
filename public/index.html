@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMM Panel</title>
+<style>
+body{font-family:Arial;margin:0;background:#f3f6fa;color:#172033}
+header{background:#111827;color:white;padding:20px}
+main{max-width:900px;margin:auto;padding:20px}
+.card{background:white;padding:20px;margin:15px 0;border-radius:14px;box-shadow:0 3px 15px #0001}
+input,select,button{width:100%;padding:12px;margin:7px 0;box-sizing:border-box;border-radius:8px;border:1px solid #ccd3df}
+button{background:#2563eb;color:white;border:0;font-weight:bold}
+.stat{font-size:25px;font-weight:bold}
+table{width:100%;border-collapse:collapse}
+td,th{padding:10px;border-bottom:1px solid #eee;text-align:left}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>⚡ SMM PANEL</h1>
+<p>Panel Sosmed Demo</p>
+</header>
+
+<main>
+
+<div class="card">
+<h2>Dashboard</h2>
+<p>Saldo:</p>
+<div class="stat" id="balance">Loading...</div>
+</div>
+
+<div class="card">
+<h2>Deposit Demo</h2>
+<input id="deposit" type="number" value="10000">
+<button onclick="deposit()">Tambah Saldo</button>
+</div>
+
+<div class="card">
+<h2>Buat Order</h2>
+
+<label>Layanan</label>
+<select id="service"></select>
+
+<label>Link</label>
+<input id="link" placeholder="https://...">
+
+<label>Jumlah</label>
+<input id="quantity" type="number" value="100">
+
+<button onclick="order()">Buat Order</button>
+</div>
+
+<div class="card">
+<h2>Riwayat Order</h2>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Layanan</th>
+<th>Jumlah</th>
+<th>Total</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody id="orders"></tbody>
+</table>
+
+</div>
+
+</main>
+
+<script>
+
+const rupiah = n =>
+"Rp " + Number(n).toLocaleString("id-ID");
+
+async function load(){
+
+const b =
+await fetch("/api/balance");
+
+const balanceData =
+await b.json();
+
+document.getElementById("balance").textContent =
+rupiah(balanceData.balance);
+
+const s =
+await fetch("/api/services");
+
+const services =
+await s.json();
+
+document.getElementById("service").innerHTML =
+services.map(x =>
+`<option value="${x.id}">
+${x.name} - ${rupiah(x.rate)}/1000
+</option>`
+).join("");
+
+const o =
+await fetch("/api/orders");
+
+const orders =
+await o.json();
+
+document.getElementById("orders").innerHTML =
+orders.map(x =>
+`<tr>
+<td>${x.id}</td>
+<td>${x.service}</td>
+<td>${x.quantity}</td>
+<td>${rupiah(x.total)}</td>
+<td>${x.status}</td>
+</tr>`
+).join("") ||
+"<tr><td colspan='5'>Belum ada order</td></tr>";
+
+}
+
+async function deposit(){
+
+const amount =
+Number(document.getElementById("deposit").value);
+
+const r =
+await fetch("/api/deposit",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({amount})
+});
+
+const data =
+await r.json();
+
+alert(data.message || data.error);
+
+load();
+
+}
+
+async function order(){
+
+const service_id =
+Number(document.getElementById("service").value);
+
+const link =
+document.getElementById("link").value;
+
+const quantity =
+Number(document.getElementById("quantity").value);
+
+const r =
+await fetch("/api/order",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+service_id,
+link,
+quantity
+})
+});
+
+const data =
+await r.json();
+
+alert(
+data.ok
+? "Order berhasil: " + data.order.id
+: data.error
+);
+
+load();
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
